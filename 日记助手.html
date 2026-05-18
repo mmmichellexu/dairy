@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="晚安日记">
+  <title>晚安日记</title>
+  <style>
+    :root {
+      --bg:        #0c0818;
+      --card:      rgba(255,255,255,0.055);
+      --border:    rgba(255,255,255,0.09);
+      --lavender:  #c8a8e0;
+      --rose:      #eda8be;
+      --gold:      #f5d27a;
+      --text:      #f0ebff;
+      --muted:     #8a7aaa;
+      --radius:    20px;
+      --safe-top:  env(safe-area-inset-top,  20px);
+      --safe-bot:  env(safe-area-inset-bottom, 0px);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: calc(var(--safe-bot) + 48px);
+      overflow-x: hidden;
+    }
+
+    /* ambient glow */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(ellipse at 15% 10%, rgba(168,108,230,.18) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 90%, rgba(220,110,150,.13) 0%, transparent 55%),
+        radial-gradient(ellipse at 50% 50%, rgba(90,50,160,.10) 0%, transparent 75%);
+    }
+
+    .wrap {
+      position: relative; z-index: 1;
+      max-width: 480px; margin: 0 auto; padding: 0 16px;
+    }
+
+    /* ── header ── */
+    .hdr {
+      padding: calc(var(--safe-top) + 18px) 0 6px;
+      text-align: center;
+      position: relative;
+    }
+
+    .gear-btn {
+      position: absolute; top: calc(var(--safe-top) + 18px); right: 0;
+      background: var(--card); border: 1px solid var(--border);
+      width: 36px; height: 36px; border-radius: 50%;
+      color: var(--muted); font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .hdr-icon  { font-size: 38px; display: block; margin-bottom: 6px;
+                 filter: drop-shadow(0 0 14px rgba(200,168,224,.55)); }
+    .hdr-sub   { font-size: 12px; color: var(--muted); letter-spacing: 1.2px;
+                 text-transform: uppercase; margin-bottom: 3px; }
+    .hdr-date  { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+
+    /* ── card ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 15px 16px;
+      margin-bottom: 11px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .lbl {
+      font-size: 10.5px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 11px;
+    }
+
+    textarea {
+      width: 100%; background: transparent; border: none; outline: none;
+      color: var(--text); font-family: inherit; font-size: 16px;
+      line-height: 1.7; resize: none;
+    }
+    textarea::placeholder { color: rgba(138,122,170,.5); }
+
+    /* ── stars ── */
+    .stars { display: flex; gap: 8px; justify-content: center; padding: 2px 0 4px; }
+    .star  {
+      font-size: 36px; cursor: pointer; user-select: none;
+      filter: grayscale(1) opacity(.3);
+      transition: transform .18s, filter .18s;
+    }
+    .star.on {
+      filter: grayscale(0) drop-shadow(0 0 8px rgba(245,210,122,.75));
+      transform: scale(1.12);
+    }
+    .star:active { transform: scale(.88); }
+
+    /* ── exercise pills ── */
+    .pills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pill {
+      padding: 7px 13px; border-radius: 100px;
+      border: 1.5px solid var(--border);
+      background: transparent; color: var(--muted);
+      font-size: 14px; font-family: inherit; cursor: pointer;
+      transition: all .18s; user-select: none;
+    }
+    .pill.on {
+      background: rgba(200,168,224,.18);
+      border-color: var(--lavender); color: var(--lavender);
+    }
+
+    /* ── buttons ── */
+    .btn {
+      width: 100%; padding: 16px; border: none; border-radius: var(--radius);
+      font-family: inherit; font-size: 17px; font-weight: 600; cursor: pointer;
+      margin-bottom: 10px; display: flex; align-items: center; justify-content: center;
+      gap: 8px; transition: opacity .18s, transform .12s;
+    }
+    .btn:active  { transform: scale(.975); opacity: .82; }
+    .btn:disabled { opacity: .3; transform: none; }
+
+    .btn-go   { background: linear-gradient(135deg,#9060d0,#cc6aa0);
+                color: #fff; box-shadow: 0 4px 24px rgba(144,96,208,.32); }
+    .btn-save { background: linear-gradient(135deg,#4e8e80,#3a7a90);
+                color: #fff; box-shadow: 0 4px 20px rgba(78,142,128,.28); }
+    .btn-soft { background: rgba(255,255,255,.055); color: var(--muted);
+                border: 1px solid var(--border); }
+
+    /* ── loading ── */
+    .loading { display: none; }
+    .spin {
+      width: 19px; height: 19px;
+      border: 2px solid rgba(200,168,224,.25); border-top-color: var(--lavender);
+      border-radius: 50%; animation: rot .7s linear infinite;
+    }
+    @keyframes rot { to { transform: rotate(360deg); } }
+
+    /* ── result ── */
+    .result { display: none; }
+    .res-body { font-size: 15px; line-height: 1.82; }
+    .sec-title {
+      font-size: 11px; font-weight: 700; color: var(--lavender);
+      text-transform: uppercase; letter-spacing: .8px; margin: 13px 0 5px;
+    }
+    .sec-title:first-child { margin-top: 0; }
+    .hint { font-size: 12px; color: var(--muted); text-align: center;
+            margin: -4px 0 8px; }
+
+    /* ── today entries ── */
+    .entries { display: none; }
+    .erow { padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.055); }
+    .erow:last-child { border-bottom: none; }
+    .etime { font-size: 11.5px; color: var(--muted); margin-bottom: 3px; }
+    .eprev { font-size: 13.5px; overflow: hidden; display: -webkit-box;
+             -webkit-line-clamp: 2; -webkit-box-orient: vertical; opacity: .8; }
+
+    /* ── toast ── */
+    .toast {
+      position: fixed; bottom: calc(var(--safe-bot) + 34px); left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: rgba(20,12,38,.92); border: 1px solid rgba(200,168,224,.25);
+      color: var(--text); padding: 10px 22px; border-radius: 100px;
+      font-size: 14px; opacity: 0; pointer-events: none; white-space: nowrap;
+      z-index: 300; transition: opacity .22s, transform .22s;
+      backdrop-filter: blur(14px);
+    }
+    .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── settings sheet ── */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.6); z-index: 100; align-items: flex-end;
+    }
+    .overlay.on { display: flex; }
+    .sheet {
+      background: #160e2a; border-top: 1px solid rgba(200,168,224,.2);
+      border-radius: 24px 24px 0 0;
+      padding: 12px 20px calc(var(--safe-bot) + 28px); width: 100%;
+    }
+    .handle { width: 36px; height: 4px; background: rgba(255,255,255,.18);
+              border-radius: 2px; margin: 0 auto 20px; }
+    .stitle { font-size: 20px; font-weight: 700; margin-bottom: 18px; }
+    .flbl   { display: block; font-size: 11px; font-weight: 700; color: var(--muted);
+              letter-spacing: .6px; margin-bottom: 5px; }
+    .finput {
+      width: 100%; padding: 11px 13px; border: 1.5px solid rgba(255,255,255,.1);
+      border-radius: 12px; font-family: inherit; font-size: 15px; color: var(--text);
+      background: rgba(255,255,255,.05); outline: none; margin-bottom: 13px;
+    }
+    .finput:focus { border-color: var(--lavender); }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- header -->
+  <div class="hdr">
+    <button class="gear-btn" onclick="openSettings()">⚙️</button>
+    <span class="hdr-icon" id="hdrIcon">🌙</span>
+    <div class="hdr-sub"  id="hdrSub">晚安</div>
+    <div class="hdr-date" id="hdrDate"></div>
+  </div>
+
+  <!-- 整体感受 -->
+  <div class="card">
+    <div class="lbl">今天的整体感受</div>
+    <textarea id="moodText" rows="2"
+      style="min-height:58px" placeholder="用一句话描述今天的心情…"></textarea>
+  </div>
+
+  <!-- 评分 -->
+  <div class="card" style="text-align:center">
+    <div class="lbl" style="text-align:left">今天打几分</div>
+    <div class="stars" id="stars">
+      <span class="star" onclick="setRating(1)">⭐</span>
+      <span class="star" onclick="setRating(2)">⭐</span>
+      <span class="star" onclick="setRating(3)">⭐</span>
+      <span class="star" onclick="setRating(4)">⭐</span>
+      <span class="star" onclick="setRating(5)">⭐</span>
+    </div>
+  </div>
+
+  <!-- 运动 -->
+  <div class="card">
+    <div class="lbl">今天运动了吗</div>
+    <div class="pills">
+      <button class="pill" data-ex="有氧"          onclick="toggleEx(this)">🏃 有氧</button>
+      <button class="pill" data-ex="上肢"          onclick="toggleEx(this)">💪 上肢</button>
+      <button class="pill" data-ex="下肢"          onclick="toggleEx(this)">🦵 下肢</button>
+      <button class="pill" data-ex="Fitness Boxing" onclick="toggleEx(this)">🥊 Fitness Boxing</button>
+      <button class="pill" data-ex="跳绳"          onclick="toggleEx(this)">🪢 跳绳</button>
+      <button class="pill" data-ex="其他"          onclick="toggleEx(this)">✨ 其他</button>
+      <button class="pill" data-ex="休息日"        onclick="toggleEx(this)">🛋 休息日</button>
+    </div>
+  </div>
+
+  <!-- 语音日记 -->
+  <div class="card">
+    <div class="lbl">语音日记</div>
+    <textarea id="inputText" style="min-height:140px"
+      placeholder="把 Typeless 的文字粘贴到这里…"></textarea>
+  </div>
+
+  <button class="btn btn-go" id="processBtn" onclick="processText()">
+    ✨ 整理日记
+  </button>
+
+  <!-- loading -->
+  <div class="card loading" id="loadingCard">
+    <div style="display:flex;align-items:center;justify-content:center;gap:11px;padding:12px">
+      <div class="spin"></div>
+      <span style="color:var(--muted);font-size:14px">Claude 整理中…</span>
+    </div>
+  </div>
+
+  <!-- result -->
+  <div class="result" id="resultSec">
+    <div class="card">
+      <div class="lbl">整理结果</div>
+      <div class="res-body" id="resBody"></div>
+    </div>
+    <button class="btn btn-save" onclick="saveToObsidian()">💜 存入 Obsidian</button>
+    <div class="hint" id="obsHint"></div>
+    <button class="btn btn-soft" onclick="resetForNext()">＋ 再记一条</button>
+  </div>
+
+  <!-- today entries -->
+  <div class="entries" id="entriesSec">
+    <div class="card">
+      <div class="lbl">今天已记录 <span id="entryCount"></span></div>
+      <div id="entriesList"></div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<!-- toast -->
+<div class="toast" id="toast"></div>
+
+<!-- settings overlay -->
+<div class="overlay" id="settingsOverlay" onclick="overlayClick(event)">
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="stitle">⚙️ 设置</div>
+    <label class="flbl">CLAUDE API KEY</label>
+    <input class="finput" type="password" id="apiKeyInput"
+           placeholder="sk-ant-api03-…" autocomplete="off">
+    <label class="flbl">OBSIDIAN VAULT 名称</label>
+    <input class="finput" type="text" id="vaultInput" placeholder="McXu's brain">
+    <label class="flbl">日记文件夹</label>
+    <input class="finput" type="text" id="folderInput" placeholder="Journals">
+    <button class="btn btn-go" onclick="saveSettings()">保存</button>
+  </div>
+</div>
+
+<script>
+let curFormatted = null, curTime = null, rating = 0;
+const exSet = new Set();
+
+// ── init ─────────────────────────────────────────────────────
+function init() {
+  const d = new Date(), h = d.getHours();
+  document.getElementById('hdrDate').textContent =
+    d.toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
+
+  if (h >= 21 || h < 5) {
+    document.getElementById('hdrIcon').textContent = '🌙';
+    document.getElementById('hdrSub').textContent  = '晚安 · 今天辛苦了';
+  } else if (h < 12) {
+    document.getElementById('hdrIcon').textContent = '🌸';
+    document.getElementById('hdrSub').textContent  = '早安 · 新的一天';
+  } else {
+    document.getElementById('hdrIcon').textContent = '☀️';
+    document.getElementById('hdrSub').textContent  = '下午好 · 今天还不错吧';
+  }
+
+  document.getElementById('apiKeyInput').value = ls('apiKey');
+  document.getElementById('vaultInput').value  = ls('vault')  || "McXu's brain";
+  document.getElementById('folderInput').value = ls('folder') || 'Journals';
+  renderEntries();
+  if (!ls('apiKey')) setTimeout(openSettings, 500);
+}
+
+// ── helpers ──────────────────────────────────────────────────
+const ls  = k => localStorage.getItem(k) || '';
+const pad = n => String(n).padStart(2,'0');
+function todayStr() { const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function nowStr()   { const d=new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function esc(s)     { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── rating ───────────────────────────────────────────────────
+function setRating(v) {
+  rating = v;
+  document.querySelectorAll('.star').forEach((s,i) => s.classList.toggle('on', i < v));
+}
+
+// ── exercise ─────────────────────────────────────────────────
+function toggleEx(el) {
+  const x = el.dataset.ex;
+  exSet.has(x) ? (exSet.delete(x), el.classList.remove('on'))
+               : (exSet.add(x),    el.classList.add('on'));
+}
+
+// ── process ──────────────────────────────────────────────────
+async function processText() {
+  const voice = document.getElementById('inputText').value.trim();
+  const mood  = document.getElementById('moodText').value.trim();
+  if (!voice && !mood) { toast('请先填写今天的感受或语音日记 💭'); return; }
+
+  const key = ls('apiKey');
+  if (!key) { toast('请先设置 API Key'); openSettings(); return; }
+
+  setBusy(true);
+
+  const ctx = [];
+  if (mood)          ctx.push(`整体感受：${mood}`);
+  if (rating > 0)    ctx.push(`今天评分：${rating}/5`);
+  if (exSet.size > 0) ctx.push(`今天运动：${[...exSet].join('、')}`);
+
+  const full = ctx.length
+    ? `背景信息：\n${ctx.join('\n')}\n\n语音日记：\n${voice||'（无）'}`
+    : voice;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1200,
+        messages: [{ role: 'user', content:
+`你是一个温柔的日记整理助手。请将用户的输入整理为以下格式，语气温暖自然：
+
+### 发生了什么
+（简洁条目，多件事换行，客观描述）
+
+### 感想
+（整理用户的感受与感悟，语气可以稍微温暖地回应）
+
+只输出这两部分，不要有任何前言或总结。
+
+输入：${full}` }]
+      })
+    });
+
+    if (!res.ok) { const e=await res.json().catch(()=>{}); throw new Error(e?.error?.message||`HTTP ${res.status}`); }
+    const data = await res.json();
+    curFormatted = data.content[0].text;
+    curTime = nowStr();
+    setBusy(false);
+    showResult(curFormatted);
+
+  } catch(e) {
+    setBusy(false);
+    toast('出错：' + e.message);
+  }
+}
+
+function setBusy(on) {
+  document.getElementById('processBtn').disabled = on;
+  document.getElementById('loadingCard').style.display = on ? 'block' : 'none';
+  if (on) document.getElementById('resultSec').style.display = 'none';
+}
+
+function showResult(text) {
+  document.getElementById('resultSec').style.display = 'block';
+  const html = esc(text)
+    .replace(/### (.+)/g, '<div class="sec-title">$1</div>')
+    .replace(/^[-–] (.+)$/gm, '• $1')
+    .replace(/\n/g, '<br>');
+  document.getElementById('resBody').innerHTML = html;
+  const n = getEntries(todayStr()).length;
+  document.getElementById('obsHint').textContent =
+    n === 0 ? 'Obsidian 会自动创建今天的文件'
+            : `今天已有 ${n} 条记录，将追加到同一文件`;
+  document.getElementById('resultSec').scrollIntoView({behavior:'smooth'});
+}
+
+// ── save ──────────────────────────────────────────────────────
+function saveToObsidian() {
+  if (!curFormatted) return;
+  const today   = todayStr();
+  const entries = getEntries(today);
+
+  const sum = [];
+  if (rating > 0)    sum.push(`${'⭐'.repeat(rating)} ${rating}/5`);
+  const mood = document.getElementById('moodText').value.trim();
+  if (mood)          sum.push(mood);
+  if (exSet.size > 0) sum.push(`运动：${[...exSet].join('、')}`);
+
+  entries.push({ time: curTime, formatted: curFormatted, summary: sum.join(' · ') });
+  saveEntries(today, entries);
+
+  // build markdown
+  let md = `# ${today}\n\n`;
+  const s0 = entries.find(e=>e.summary)?.summary;
+  if (s0) md += `> ${s0}\n\n`;
+  entries.forEach(e => { md += `## ${e.time}\n\n${e.formatted}\n\n---\n\n`; });
+  md = md.trim();
+
+  copyText(md);
+
+  const vault  = ls('vault')  || "McXu's brain";
+  const folder = ls('folder') || 'Journals';
+  window.location.href =
+    `obsidian://new?vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(folder+'/'+today)}&content=${encodeURIComponent(md)}&overwrite=true`;
+
+  toast('已存入 Obsidian 💜');
+  renderEntries();
+}
+
+function copyText(t) {
+  if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(t).catch(()=>fb(t)); }
+  else fb(t);
+}
+function fb(t) {
+  const el=document.createElement('textarea');
+  el.value=t;
+  Object.assign(el.style,{position:'fixed',opacity:'0',top:'0'});
+  document.body.appendChild(el); el.focus(); el.select();
+  document.execCommand('copy'); document.body.removeChild(el);
+}
+
+// ── storage ───────────────────────────────────────────────────
+function getEntries(d)       { return JSON.parse(localStorage.getItem('e_'+d)||'[]'); }
+function saveEntries(d,arr)  { localStorage.setItem('e_'+d, JSON.stringify(arr)); }
+
+function renderEntries() {
+  const today   = todayStr();
+  const entries = getEntries(today);
+  const sec     = document.getElementById('entriesSec');
+  if (!entries.length) { sec.style.display='none'; return; }
+  sec.style.display = 'block';
+  document.getElementById('entryCount').textContent = `(${entries.length} 条)`;
+  document.getElementById('entriesList').innerHTML = entries.map(e=>`
+    <div class="erow">
+      <div class="etime">${e.time}${e.summary?' · '+esc(e.summary):''}</div>
+      <div class="eprev">${esc(e.formatted.replace(/###.+/g,'').trim()).substring(0,85)}…</div>
+    </div>`).join('');
+}
+
+function resetForNext() {
+  curFormatted = null; curTime = null; rating = 0; exSet.clear();
+  document.getElementById('inputText').value = '';
+  document.getElementById('moodText').value  = '';
+  document.querySelectorAll('.star').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.pill').forEach(p=>p.classList.remove('on'));
+  document.getElementById('resultSec').style.display = 'none';
+  document.getElementById('processBtn').disabled = false;
+  renderEntries();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── settings ──────────────────────────────────────────────────
+function openSettings()  { document.getElementById('settingsOverlay').classList.add('on'); }
+function closeSettings() { document.getElementById('settingsOverlay').classList.remove('on'); }
+function overlayClick(e) { if (e.target===document.getElementById('settingsOverlay')) closeSettings(); }
+function saveSettings()  {
+  localStorage.setItem('apiKey', document.getElementById('apiKeyInput').value.trim());
+  localStorage.setItem('vault',  document.getElementById('vaultInput').value.trim()  || "McXu's brain");
+  localStorage.setItem('folder', document.getElementById('folderInput').value.trim() || 'Journals');
+  closeSettings(); toast('设置已保存 ✓');
+}
+
+// ── toast ─────────────────────────────────────────────────────
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.classList.remove('on'), 2800);
+}
+
+init();
+</script>
+</body>
+</html>
